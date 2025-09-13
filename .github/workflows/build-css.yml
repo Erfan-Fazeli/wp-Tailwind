@@ -1,29 +1,48 @@
-name: Build Tailwind CSS
+name: Build & Commit Tailwind CSS
 
 on:
   push:
-    branches: ["**"]
+    branches: [ main ]       
+    paths:
+      - 'componnets/**/*.html'
+      - 'src/tw.css'
+      - '.github/workflows/build-and-commit-css.yml'
   workflow_dispatch: {}
+
+permissions:
+  contents: write
 
 jobs:
   build:
+  
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: '20'
 
-      - name: Build CSS with Tailwind CLI v4 (no npm install needed)
+      - name: Build CSS with Tailwind CLI v4
         run: |
-          mkdir -p dist
-          npx @tailwindcss/cli@latest -i ./src/tw.css -o ./dist/style.css --minify --content "./componnets/**/*.html"
+          mkdir -p public
+          npx @tailwindcss/cli@latest \
+            -i ./src/tw.css \
+            -o ./public/style.css \
+            --minify \
+            --content "./componnets/**/*.html"
 
-      - name: Upload CSS artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: built-css
-          path: dist/style.css
+      - name: Commit & push CSS to repo
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/style.css
+        
+          git diff --cached --quiet && echo "No CSS changes" && exit 0
+          git commit -m "chore: build CSS [skip ci]"
+          git push
