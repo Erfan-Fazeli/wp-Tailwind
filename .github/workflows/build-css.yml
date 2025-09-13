@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]   
     paths:
-      - 'componnets/**/*.html'
+      - 'input/componnets.html'
       - 'src/tw.css'
       - '.github/workflows/build-css.yml'
   workflow_dispatch: {}
@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   build:
-  
+ 
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     steps:
@@ -28,24 +28,45 @@ jobs:
         with:
           node-version: '20'
 
-   
+      # برای resolve شدن @import "tailwindcss"
       - name: Install Tailwind engine
         run: npm i -D tailwindcss@latest
 
       - name: Build CSS with Tailwind CLI v4
         run: |
-          mkdir -p public
+          mkdir -p output
           npx @tailwindcss/cli@latest \
             -i ./src/tw.css \
-            -o ./public/style.css \
+            -o ./output/style.css \
             --minify \
-            --content "./componnets/**/*.html"
+            --content "./input/componnets.html"
 
-      - name: Commit & push CSS
+      - name: Build output/componnets.html (wrap + link to CSS)
+        shell: bash
+        run: |
+          mkdir -p output
+          {
+            echo '<!doctype html>'
+            echo '<html lang="en">'
+            echo '<head>'
+            echo '  <meta charset="utf-8" />'
+            echo '  <meta name="viewport" content="width=device-width,initial-scale=1" />'
+            echo '  <title>Components</title>'
+            echo '  <link rel="stylesheet" href="./style.css" />'
+            echo '</head>'
+            echo '<body>'
+            echo '  <main>'
+            cat input/componnets.html || true
+            echo '  </main>'
+            echo '</body>'
+            echo '</html>'
+          } > output/componnets.html
+
+      - name: Commit & push output files
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/style.css
-          git diff --cached --quiet && echo "No CSS changes" && exit 0
-          git commit -m "chore: build CSS [skip ci]"
+          git add output/style.css output/componnets.html
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "chore: build output (style.css + componnets.html) [skip ci]"
           git push
