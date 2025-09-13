@@ -1,0 +1,8 @@
+{
+  "name": "tailwind-html-to-css-starter",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npx @tailwindcss/cli@latest -i src/tw.css -o dist/style.css --minify --content \"componnets/**/*.html\""
+  }
+}

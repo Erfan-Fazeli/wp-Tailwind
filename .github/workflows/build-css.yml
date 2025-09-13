@@ -1,0 +1,29 @@
+name: Build Tailwind CSS
+
+on:
+  push:
+    branches: ["**"]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build CSS with Tailwind CLI v4 (no npm install needed)
+        run: |
+          mkdir -p dist
+          npx @tailwindcss/cli@latest -i ./src/tw.css -o ./dist/style.css --minify --content "./componnets/**/*.html"
+
+      - name: Upload CSS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-css
+          path: dist/style.css
